@@ -108,9 +108,48 @@ export async function getSpotifyCallback(
       details: error instanceof Error ? error.message : error,
     };
   }
+  
+}
+export async function refreshSpotifyToken(
+  refreshToken: string,
+  credentials: SpotifyCredentials
+) {
+  const { clientId, clientSecret } = credentials;
+
+  const body = querystring.stringify({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  });
+
+  const headers = {
+    Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+
+  try {
+    const response: AxiosResponse<{
+      access_token: string;
+      refresh_token?: string;
+    }> = await axios.post('https://accounts.spotify.com/api/token', body, {
+      headers,
+    });
+
+    return {
+      ok: true as const,
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token || refreshToken,
+    };
+  } catch (error) {
+    return {
+      ok: false as const,
+      reason: 'token_refresh_failed',
+      details: error instanceof Error ? error.message : error,
+    };
+  }
 }
 
 export default {
   getSpotifyURL,
   getSpotifyCallback,
+  refreshSpotifyToken,
 };

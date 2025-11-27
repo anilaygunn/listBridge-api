@@ -5,6 +5,7 @@ const router = Router();
 
 router.get('/spotify/login',authController.spotifyLogIn)
 router.get('/spotify/callback',authController.spotifyCallback)
+router.get('/spotify/refresh-token',authController.spotifyRefreshToken)
 
 export default router;
 

@@ -22,7 +22,7 @@ const spotifyCallback = async (req: Request,res: Response) : Promise<void> =>{
         const callbackResult = await spotifyService.getSpotifyCallback(code as string, state as string, {
             clientId: process.env.SPOTIFY_CLIENT_ID ?? '',
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
-            redirectUri: process.env.SPOTIFY_REDIRECT_URI ?? '',
+            redirectUri: process.env.SPOTIFY_REDIRECT_URI ?? '', 
         });
         if (!callbackResult.ok) {
             res.status(400).json({error: 'Failed to exchange token'});
@@ -35,7 +35,38 @@ const spotifyCallback = async (req: Request,res: Response) : Promise<void> =>{
     }
 }
 
+const spotifyRefreshToken = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { refresh_token } = req.body;
+        
+        if (!refresh_token) {
+            res.status(400).json({ error: 'Missing refresh_token' });
+            return;
+        }
+
+        const result = await spotifyService.refreshSpotifyToken(refresh_token, {
+            clientId: process.env.SPOTIFY_CLIENT_ID ?? '',
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
+            redirectUri: process.env.SPOTIFY_REDIRECT_URI ?? '',
+        });
+
+        if (!result.ok) {
+            res.status(400).json({ error: 'Failed to refresh token' });
+            return;
+        }
+
+        res.json({
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+        });
+    } catch {
+        console.error('Error refreshing token');
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 export default {
     spotifyLogIn,
-    spotifyCallback
+    spotifyCallback,
+    spotifyRefreshToken
 }
