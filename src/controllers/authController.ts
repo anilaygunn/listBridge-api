@@ -37,14 +37,14 @@ const spotifyCallback = async (req: Request,res: Response) : Promise<void> =>{
 
 const spotifyRefreshToken = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { refresh_token } = req.body;
+        const { refresh_token } = req.query;
         
         if (!refresh_token) {
             res.status(400).json({ error: 'Missing refresh_token' });
             return;
         }
 
-        const result = await spotifyService.refreshSpotifyToken(refresh_token, {
+        const result = await spotifyService.refreshSpotifyToken(refresh_token as string, {
             clientId: process.env.SPOTIFY_CLIENT_ID ?? '',
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
             redirectUri: process.env.SPOTIFY_REDIRECT_URI ?? '',

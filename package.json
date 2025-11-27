@@ -3,10 +3,12 @@
   "dependencies": {
     "eslint": "^9.39.1",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "prettier": "^3.6.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
@@ -22,9 +24,9 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-  "dev": "nodemon --watch src --exec \"tsx src/server.ts\"",
-  "start": "node dist/server.js",
-  "build": "tsc -p tsconfig.json",
-  "delete-js-maps": "find src -type f \\( -name \"*.js\" -o -name \"*.js.map\" -o -name \"*.d.ts\" -o -name \"*.d.ts.map\" \\) -delete"
+    "dev": "nodemon --watch src --exec \"tsx src/server.ts\"",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "delete-js-maps": "find src -type f \\( -name \"*.js\" -o -name \"*.js.map\" -o -name \"*.d.ts\" -o -name \"*.d.ts.map\" \\) -delete"
   }
 }
