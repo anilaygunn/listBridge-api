@@ -1,5 +1,6 @@
 import axios, { type AxiosResponse } from 'axios';
 import querystring from 'querystring';
+import { config } from '../config/config.js';
 
 type SpotifyState = string & { readonly brand: unique symbol };
 type SpotifyCode = string & { readonly brand: unique symbol };
@@ -43,18 +44,21 @@ function generateRandomString(length: number): string {
 }
 
 export function getSpotifyURL(): string {
+  console.log('[SERVICE] Generating Spotify authorization URL');
   const state = generateRandomString(16) as SpotifyState;
 
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: process.env.SPOTIFY_CLIENT_ID ?? '',
+    client_id: config.spotify.clientId,
     scope: SPOTIFY_SCOPE.join(' '),
-    redirect_uri: process.env.SPOTIFY_REDIRECT_URI ?? '',
+    redirect_uri: config.spotify.redirectUri,
     state,
     show_dialog: 'false',
   });
 
-  return `https://accounts.spotify.com/authorize?${params.toString()}`;
+  const authURL = `https://accounts.spotify.com/authorize?${params.toString()}`;
+  console.log('[SERVICE] Spotify authorization URL generated with state:', state);
+  return authURL;
 }
 
 export async function getSpotifyCallback(
@@ -62,10 +66,14 @@ export async function getSpotifyCallback(
   state: string | null,
   credentials: SpotifyCredentials,
 ): Promise<SpotifyCallbackResult> {
+  console.log('[SERVICE] Processing Spotify callback with code and state');
+  
   if (!state) {
+    console.error('[SERVICE] Spotify callback failed: state is missing');
     return { ok: false, reason: 'state_mismatch' };
   }
   if (!code) {
+    console.error('[SERVICE] Spotify callback failed: code is missing');
     return { ok: false, reason: 'token_exchange_failed' };
   }
 
@@ -85,6 +93,7 @@ export async function getSpotifyCallback(
   };
 
   try {
+    console.log('[SERVICE] Exchanging Spotify authorization code for tokens');
     const response: AxiosResponse<{
       access_token: string;
       refresh_token: string;
@@ -93,6 +102,7 @@ export async function getSpotifyCallback(
       headers,
     });
 
+    console.log('[SERVICE] Spotify token exchange successful, expires in:', response.data.expires_in, 'seconds');
     return {
       ok: true,
       state: state as SpotifyState,
@@ -102,6 +112,17 @@ export async function getSpotifyCallback(
       expiresIn: response.data.expires_in,
     };
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const errorData = error.response?.data;
+      console.error('[SERVICE] Spotify token exchange failed:', {
+        status,
+        message: error.message,
+        errorData: errorData || 'No error data'
+      });
+    } else {
+      console.error('[SERVICE] Spotify token exchange failed:', error instanceof Error ? error.message : error);
+    }
     return {
       ok: false,
       reason: 'token_exchange_failed',
@@ -114,6 +135,7 @@ export async function refreshSpotifyToken(
   refreshToken: string,
   credentials: SpotifyCredentials
 ) {
+  console.log('[SERVICE] Refreshing Spotify access token');
   const { clientId, clientSecret } = credentials;
 
   const body = querystring.stringify({
@@ -134,12 +156,27 @@ export async function refreshSpotifyToken(
       headers,
     });
 
+    const hasNewRefreshToken = !!response.data.refresh_token;
+    console.log('[SERVICE] Spotify token refresh successful', hasNewRefreshToken ? '(new refresh token provided)' : '(using existing refresh token)');
+    
     return {
       ok: true as const,
       accessToken: response.data.access_token,
       refreshToken: response.data.refresh_token || refreshToken,
     };
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const errorData = error.response?.data;
+      console.error('[SERVICE] Spotify token refresh failed:', {
+        status,
+        message: error.message,
+        errorData: errorData || 'No error data'
+      });
+    } else {
+      console.error('[SERVICE] Spotify token refresh failed:', error instanceof Error ? error.message : error);
+    }
+    
     return {
       ok: false as const,
       reason: 'token_refresh_failed',
@@ -147,9 +184,6 @@ export async function refreshSpotifyToken(
     };
   }
 }
-
-
-
 
 export default {
   getSpotifyURL,
